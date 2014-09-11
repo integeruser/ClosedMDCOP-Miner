@@ -69,7 +69,7 @@ TEST_CASE( "gen_candidate_co_occ", "[algorithms]" ) {
 }
 
 
-std::map<Pattern, Table> gen_co_occ_inst(const std::map<Pattern, std::pair<Pattern, Pattern>>&, const std::map<Pattern, Table>&, const std::shared_ptr<INeighborRelation>);
+extern std::map<Pattern, Table> gen_co_occ_inst(const std::map<Pattern, std::pair<Pattern, Pattern>>&, const std::map<Pattern, Table>&, const std::shared_ptr<INeighborRelation>);
 TEST_CASE( "gen_co_occ_inst", "[algorithm]" ) {
     std::shared_ptr<Object> a1 = std::make_shared<Object>( "A", 1, 1.1f, 1, 0 );
     std::shared_ptr<Object> a2 = std::make_shared<Object>( "A", 2, 2.8f, 2, 0 );
@@ -121,7 +121,7 @@ TEST_CASE( "gen_co_occ_inst", "[algorithm]" ) {
 }
 
 
-extern std::map<Pattern, bool> find_spatial_prev_co_occ(const std::map<Pattern, Table>&, float, const std::map<EventType, std::set<std::shared_ptr<Object>>>&);
+extern std::map<Pattern, bool> find_spatial_prev_co_occ(const std::map<EventType, std::set<std::shared_ptr<Object>>>&, const std::map<Pattern, Table>&, float);
 TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
     EventType o1{ "A" };
     EventType o2{ "B" };
@@ -147,17 +147,9 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
         t1[p1] = table1;
         
         SECTION( "" ) {
-            float p = 0;
-            
-            std::map<Pattern, bool> result = find_spatial_prev_co_occ( t1, p, objects_by_type );
-            
-            std::map<Pattern, bool> expected_result{ { p1, true } };
-            REQUIRE( expected_result == result );
-        }
-        SECTION( "" ) {
             float p = 0.4;
             
-            std::map<Pattern, bool> result = find_spatial_prev_co_occ( t1, p, objects_by_type );
+            std::map<Pattern, bool> result = find_spatial_prev_co_occ( objects_by_type, t1, p );
             
             std::map<Pattern, bool> expected_result{ { p1, true } };
             REQUIRE( expected_result == result );
@@ -165,7 +157,7 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
         SECTION( "" ) {
             float p = 0.5;
             
-            std::map<Pattern, bool> result = find_spatial_prev_co_occ( t1, p, objects_by_type );
+            std::map<Pattern, bool> result = find_spatial_prev_co_occ( objects_by_type, t1, p );
             
             std::map<Pattern, bool> expected_result{ { p1, true } };
             REQUIRE( expected_result == result );
@@ -173,7 +165,7 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
         SECTION( "" ) {
             float p = 0.6;
             
-            std::map<Pattern, bool> result = find_spatial_prev_co_occ( t1, p, objects_by_type );
+            std::map<Pattern, bool> result = find_spatial_prev_co_occ( objects_by_type, t1, p );
             
             std::map<Pattern, bool> expected_result{ { p1, false } };
             REQUIRE( expected_result == result );
@@ -181,7 +173,7 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
         SECTION( "" ) {
             float p = 1;
             
-            std::map<Pattern, bool> result = find_spatial_prev_co_occ( t1, p, objects_by_type );
+            std::map<Pattern, bool> result = find_spatial_prev_co_occ( objects_by_type, t1, p );
             
             std::map<Pattern, bool> expected_result{ { p1, false } };
             REQUIRE( expected_result == result );
@@ -190,7 +182,7 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
 }
 
 
-extern std::map<Pattern, float> find_time_index(const std::map<int, std::map<Pattern, bool>>&);
+extern std::map<Pattern, float> find_time_index(const std::map<TimeSlot, std::map<Pattern, bool>>&);
 TEST_CASE( "find_time_index", "[algorithm]" ) {
     EventType o1{ "A" };
     EventType o2{ "B" };
@@ -200,7 +192,7 @@ TEST_CASE( "find_time_index", "[algorithm]" ) {
         Pattern p1{ o1, o2 };
         Pattern p2{ o2, o3 };
 
-        std::map<int, std::map<Pattern, bool>> sp;
+        std::map<TimeSlot, std::map<Pattern, bool>> sp;
         sp[0][p1] = true;
         sp[0][p2] = true;
         sp[1][p1] = true;
@@ -217,7 +209,7 @@ TEST_CASE( "find_time_index", "[algorithm]" ) {
 
 
 extern std::set<Pattern> find_time_prev_co_occ(const std::map<Pattern, float>&, float);
-TEST_CASE( "find_time_prev_co_occ", "[algorithms]" ) {
+TEST_CASE( "find_time_prev_co_occ", "[algorithm]" ) {
     EventType o1{ "A" };
     EventType o2{ "B" };
     EventType o3{ "C" };
