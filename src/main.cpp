@@ -106,12 +106,12 @@ int main(int argc, const char *argv[]) {
     
     // run the algorithm and print results
     std::cout << "Starting ClosedMDCOP..." << std::endl;
-    std::map<int, std::set<Pattern>> cmdp = mine_closed_mdcops( dataset.event_types, dataset, { time_slot_s, time_slot_n }, d, spt, tpt );
+    std::map<size_t, std::set<Pattern>> cmdp = mine_closed_mdcops( dataset.event_types, dataset, { time_slot_s, time_slot_n }, d, spt, tpt );
     std::cout << std::endl;
 
     std::cout << "Closed Mixed-Drove Spatiotemporal Co-Occurrence Patterns: " << std::endl;
     for ( const auto& pair : cmdp ) {
-        const int size = pair.first;
+        const size_t size = pair.first;
         const std::set<Pattern>& patterns = pair.second;
         std::cout << std::setw( 5 ) << std::left << " " << "size=" << size << ": " << patterns << std::endl;
     }

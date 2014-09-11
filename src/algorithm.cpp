@@ -1,13 +1,3 @@
-#ifdef DEBUG
-#define SPACES(i) std::setw( i ) << std::left << " "
-#define PRINT(os) do { std::cout << os << std::flush; } while ( false )
-#define PRINTLN(os) do { std::cout << os << std::endl; } while ( false )
-#else
-#define SPACES(i)
-#define PRINT(os) do {} while ( false )
-#define PRINTLN(os) do {} while ( false )
-#endif
-
 #include <algorithm>
 #include <cassert>
 #include <limits>
@@ -21,6 +11,17 @@
 #include "prettyprint.hpp"
 
 #include "algorithm.hpp"
+
+
+#ifdef DEBUG
+#define SPACES(i) std::setw( i ) << std::left << " "
+#define PRINT(os) do { std::cout << os << std::flush; } while ( false )
+#define PRINTLN(os) do { std::cout << os << std::endl; } while ( false )
+#else
+#define SPACES(i)
+#define PRINT(os) do {} while ( false )
+#define PRINTLN(os) do {} while ( false )
+#endif
 
 
 std::map<Pattern, std::pair<Pattern, Pattern>> gen_candidate_co_occ(const std::set<Pattern>& mdp) {
@@ -79,7 +80,7 @@ std::map<Pattern, std::pair<Pattern, Pattern>> gen_candidate_co_occ(const std::s
 }
 
 
-Table join(Table t1, Table t2, const std::shared_ptr<INeighborRelation> d) {
+Table join(const Table& t1, const Table& t2, const std::shared_ptr<INeighborRelation> d) {
     PRINTLN( SPACES( 20 ) << "-> " << __FUNCTION__ );
 
     Table t;
@@ -151,19 +152,20 @@ Table join(Table t1, Table t2, const std::shared_ptr<INeighborRelation> d) {
     return t;
 }
 
-std::map<Pattern, Table> gen_co_occ_inst(const std::map<Pattern, std::pair<Pattern, Pattern>>& c,
-                                         const std::map<Pattern, Table>& prev_t,
+std::map<Pattern, Table> gen_co_occ_inst(const std::map<Pattern, SubPatterns>& c, const std::map<Pattern, Table>& prev_t,
                                          const std::shared_ptr<INeighborRelation> d) {
     PRINTLN( SPACES( 15 ) << "-> " << __FUNCTION__ );
 
+    // generate instances by joining the tables of the two subpatterns
+    
     std::map<Pattern, Table> t;
     
     for( const auto& pair : c ) {
         const Pattern& candidate_pattern = pair.first;
-        const std::pair<Pattern, Pattern>& generating_patterns = pair.second;
+        const SubPatterns& subpatterns = pair.second;
         
-        const Table& table1 = prev_t.at( generating_patterns.first );
-        const Table& table2 = prev_t.at( generating_patterns.second );
+        const Table& table1 = prev_t.at( subpatterns.first );
+        const Table& table2 = prev_t.at( subpatterns.second );
         t[candidate_pattern] = join( table1, table2, d );
     }
 
@@ -172,10 +174,10 @@ std::map<Pattern, Table> gen_co_occ_inst(const std::map<Pattern, std::pair<Patte
 }
 
 
-std::map<Pattern, bool> find_spatial_prev_co_occ(const std::map<Pattern, Table>& t, float p,
-                                                 const std::map<EventType, std::set<std::shared_ptr<Object>>>& objects_by_type) {
+std::map<Pattern, bool> find_spatial_prev_co_occ(const std::map<EventType, std::set<std::shared_ptr<Object>>>& objects_by_event_type,
+                                                 const std::map<Pattern, Table>& t, float spt) {
     PRINTLN( SPACES( 15 ) << "-> " << __FUNCTION__ );
-    assert( p >= 0 && p <=1 );
+    assert( spt > 0 && spt <=1 );
     
     std::map<Pattern, bool> sp;
     
@@ -184,43 +186,44 @@ std::map<Pattern, bool> find_spatial_prev_co_occ(const std::map<Pattern, Table>&
         const Table& table = pair.second;
         
         // divide objects per object type
-        std::map<EventType, std::set<unsigned>> object_ids_by_object_type;
+        std::map<EventType, std::set<unsigned>> ids_by_event_type;
         for ( const RowInstance& row_instance : table ) {
             const std::set<std::shared_ptr<Object>>& objects = row_instance.first;
+            
             for ( const std::shared_ptr<Object>& object : objects ) {
-                object_ids_by_object_type[object->event_type].insert( object->id );
+                ids_by_event_type[object->event_type].insert( object->id );
             }
             
             const std::shared_ptr<Object>& object = row_instance.second;
-            if ( object ) { object_ids_by_object_type[object->event_type].insert( object->id ); }
+            if ( object ) { ids_by_event_type[object->event_type].insert( object->id ); }
         }
         
         // compute partecipation ratio
-        std::map<EventType, float> partecipation_ratio_by_object_type;
-        for ( const auto& pair2 : object_ids_by_object_type ) {
-            const EventType& type = pair2.first;
+        std::map<EventType, float> partecipation_ratio_by_event_type;
+        for ( const auto& pair2 : ids_by_event_type ) {
+            const EventType& event_type = pair2.first;
             
             float numerator = pair2.second.size();
-            float denominator = objects_by_type.at( type ).size();
+            float denominator = objects_by_event_type.at( event_type ).size();
             assert( numerator > 0 );
             assert( denominator > 0 );
             
             float partecipation_ratio = numerator/denominator;
             assert( partecipation_ratio >= 0 && partecipation_ratio <= 1 );
             
-            partecipation_ratio_by_object_type[type] = partecipation_ratio;
+            partecipation_ratio_by_event_type[event_type] = partecipation_ratio;
         }
         
         // compute partecipation index
         float partecipation_index = std::numeric_limits<float>::max();
-        for ( const auto& pair2 : partecipation_ratio_by_object_type ) {
+        for ( const auto& pair2 : partecipation_ratio_by_event_type ) {
             const float partecipation_ratio = pair2.second;
             if ( partecipation_ratio < partecipation_index ) { partecipation_index = partecipation_ratio; }
         }
         
         // check if partecipation index is above the threshold
         const Pattern& pattern = pair.first;
-        if ( partecipation_index != std::numeric_limits<float>::max() && partecipation_index >= p ) {
+        if ( partecipation_index != std::numeric_limits<float>::max() && partecipation_index >= spt ) {
             sp[pattern] = true;
         }
         else { sp[pattern] = false; }
@@ -232,7 +235,7 @@ std::map<Pattern, bool> find_spatial_prev_co_occ(const std::map<Pattern, Table>&
 }
 
 
-std::map<Pattern, float> find_time_index(const std::map<int, std::map<Pattern, bool>>& sp) {
+std::map<Pattern, float> find_time_index(const std::map<TimeSlot, std::map<Pattern, bool>>& sp) {
     PRINTLN( SPACES( 15 ) << "-> " << __FUNCTION__ );
 
     std::map<Pattern, float> tp;
@@ -281,11 +284,8 @@ std::set<Pattern> find_time_prev_co_occ(const std::map<Pattern, float>& tp, floa
 }
 
 
-std::map<int, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>& e, const Dataset& st, const std::pair<int, int> tf,
-                                                    const std::shared_ptr<INeighborRelation> d, const float spt, const float tpt) {
-    assert( !e.empty() );
-    assert( !st.objects_by_time_slot.empty() );
-    
+std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>& e, const Dataset& st, const std::pair<int, int> tf,
+                                                       const std::shared_ptr<INeighborRelation> d, const float spt, const float tpt) {
     int first_time_slot = tf.first, time_slot_count = tf.second;
     assert( first_time_slot >= 0 );
     assert( time_slot_count > 0 );
@@ -295,9 +295,15 @@ std::map<int, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>& e
     assert( tpt > 0 && tpt <= 1 );
     
     // initialization
-    int k = 1;
+    int k = 1;  // pattern size
     
-    std::map<int, std::map<int, std::map<Pattern, bool>>> sp;
+    std::map<size_t, std::set<Pattern>> cmdp;  // closed mdcops
+    for ( const auto& type : e ) {
+        Pattern pattern{ type };
+        cmdp[k].insert( pattern );
+    }
+    
+    std::map<size_t, std::map<TimeSlot, std::map<Pattern, bool>>> sp;
     for ( int time_slot = first_time_slot; time_slot < first_time_slot + time_slot_count; ++time_slot ) {
         for ( const auto& pair : st.objects_by_event_type ) {
             const EventType& type = pair.first;
@@ -307,14 +313,14 @@ std::map<int, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>& e
         }
     }
     
-    std::map<int, std::map<int, std::map<Pattern, Table>>> t;
+    std::map<size_t, std::map<TimeSlot, std::map<Pattern, Table>>> t;  // tables
     for ( int time_slot = first_time_slot; time_slot < first_time_slot + time_slot_count; ++time_slot ) {
         for ( const auto& pair : st.objects_by_event_type ) {
-            const EventType& type = pair.first;
-            Pattern pattern{ type };
+            const EventType& event_type = pair.first;
+            Pattern pattern{ event_type };
             
             Table table;
-            for ( const std::shared_ptr<Object>& object : st.objects_by_event_type.at( type ) ) {
+            for ( const std::shared_ptr<Object>& object : st.objects_by_event_type.at( event_type ) ) {
                 if ( object->time_slot == time_slot ) {
                     RowInstance row_instance{ std::set<std::shared_ptr<Object>>{}, { object } };
                     table.insert( row_instance );
@@ -323,30 +329,25 @@ std::map<int, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>& e
             t[k][time_slot][pattern] = table;
         }
     }
-    
-    std::map<int, std::set<Pattern>> mdp;
-    for ( const auto& type : e ) {
-        Pattern pattern{ type };
-        mdp[k].insert( pattern );
-    }
 
     // algorithm
-    while ( !mdp[k].empty() ) {
+    while ( !cmdp[k].empty() ) {
+        // compute mdcops of size k+1
         std::cout << std::setw( 5 ) << std::left << " " << "Iterating for k=" << k << " (computing k=" << k+1 << ")..." << std::endl;
         
         // 1. generate candidate co-occurrence patterns
-        std::map<int, std::map<Pattern, std::pair<Pattern, Pattern>>> c{{ 0, gen_candidate_co_occ( mdp[k] ) }};
-            
+        std::map<TimeSlot, std::map<Pattern, SubPatterns>> c;
+        c[first_time_slot] = gen_candidate_co_occ( cmdp[k] );  // all possible patterns generated from mdp[k]
+        
         // for each time slot
-        for ( int time_slot = first_time_slot; time_slot < first_time_slot + time_slot_count; ++time_slot ) {
+        for ( TimeSlot time_slot = first_time_slot; time_slot < first_time_slot + time_slot_count; ++time_slot ) {
             std::cout << std::setw( 10 ) << std::left << " " << "Iterating for time_slot=" << time_slot << "..." << std::endl;
             
-            // 2. generate spatial co-occurrence row_instances
-            const auto& curr_c = c.count( time_slot ) ? c[time_slot] : c[0];
-            t[k+1][time_slot] = gen_co_occ_inst( curr_c, t[k][time_slot], d );
+            // 2. generate spatial co-occurrence row instances
+            t[k+1][time_slot] = gen_co_occ_inst( c[time_slot], t[k][time_slot], d );
             
             // 3. find spatial prevalent co-occurrence patterns
-            sp[k+1][time_slot] = find_spatial_prev_co_occ( t[k+1][time_slot], spt, st.objects_by_event_type );
+            sp[k+1][time_slot] = find_spatial_prev_co_occ( st.objects_by_event_type, t[k+1][time_slot], spt );
             
             // 4. form a time prevalence table
             const auto tp = find_time_index( sp[k+1] );
@@ -356,20 +357,20 @@ std::map<int, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>& e
             static const float step = 1.f/time_slot_count;
             float threshold = tpt;
             if ( step * (time_slot_count-time_slot) >= threshold && time_slot_count-time_slot > 1 ) { threshold = 0; }
-            mdp[k+1] = find_time_prev_co_occ( tp, threshold );
+            cmdp[k+1] = find_time_prev_co_occ( tp, threshold );
             
             // candidates for the next time slot are mdcops of the current time slot
-            for ( const auto& pattern : mdp[k+1] ) {
+            for ( const auto& pattern : cmdp[k+1] ) {
                 c[time_slot+1][pattern] = c[time_slot][pattern];
             }
         }
         
-        std::cout << std::setw( 5 ) << std::left << " " << "MDCOPs found: " << mdp[k+1] << std::endl;
+        std::cout << std::setw( 5 ) << std::left << " " << "Closed MDCOPs found: " << cmdp[k+1] << std::endl;
         ++k;
     }
     
-    // remove first and last patterns (input pattern and empty pattern)
-    mdp.erase( 1 );
-    mdp.erase( k );
-    return mdp;
+    // remove patterns of length 1 and of length k (empty set)
+    cmdp.erase( 1 );
+    cmdp.erase( k );
+    return cmdp;
 }
