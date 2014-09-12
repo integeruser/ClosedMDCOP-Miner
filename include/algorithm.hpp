@@ -18,7 +18,7 @@ using RowInstance = std::pair<std::set<std::shared_ptr<Object>>, std::shared_ptr
 using Table = std::set<RowInstance>;
 
 
-std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>&, const Dataset&, const std::pair<int, int>,
+std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>&, const Dataset&, const std::pair<unsigned, unsigned>,
                                                        const std::shared_ptr<INeighborRelation>, const float, const float);
 
 

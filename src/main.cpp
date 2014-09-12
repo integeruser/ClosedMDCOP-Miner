@@ -93,9 +93,9 @@ int main(int argc, const char *argv[]) {
     
     // re-validate time slots arguments after dataset parsing
     std::cout << "Clamping time slots..." << std::endl;
-    int time_slot_count = (int) dataset.objects_by_time_slot.size();
-    time_slot_s = std::min( time_slot_s, time_slot_count-1 );
-    time_slot_n = std::min( time_slot_n, time_slot_count-time_slot_s );
+    unsigned time_slot_count = (unsigned) dataset.objects_by_time_slot.size();
+    time_slot_s = std::min( (unsigned) time_slot_s, time_slot_count-1 );
+    time_slot_n = std::min( (unsigned) time_slot_n, time_slot_count-time_slot_s );
     std::cout << std::setw( 5 ) << std::left << " " << "time_slot_s: " << time_slot_s << std::endl;
     std::cout << std::setw( 5 ) << std::left << " " << "time_slot_n: " << time_slot_n << std::endl;
     std::cout << std::endl;
