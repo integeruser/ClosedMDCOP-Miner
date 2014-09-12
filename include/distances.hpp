@@ -15,7 +15,6 @@ struct INeighborRelation {
 
 
 struct EuclideanDistance : public INeighborRelation {
-    const float distance_threshold;
     const float squared_distance_threshold;
     
     EuclideanDistance(float distance_threshold);

@@ -6,7 +6,7 @@
 
 
 EuclideanDistance::EuclideanDistance(float distance_threshold) :
-    distance_threshold( distance_threshold ), squared_distance_threshold( distance_threshold*distance_threshold ) {
+    squared_distance_threshold( distance_threshold*distance_threshold ) {
 }
 
 bool EuclideanDistance::neighbors(const std::shared_ptr<Object>& object1, const std::shared_ptr<Object>& object2) {
