@@ -26,15 +26,10 @@
 #endif
 
 
-std::map<Pattern, SubPatterns> gen_candidate_co_occ(const std::set<Pattern>& mdp) {
-    PRINTLN( SPACES( 10 ) << "-> " << __FUNCTION__ << ": " << mdp );
-    assert ( std::adjacent_find( mdp.cbegin(), mdp.cend(), [](const Pattern& pattern1, const Pattern& pattern2) {
-        return pattern1.size() != pattern2.size();
-    } ) == mdp.end() );
+std::map<Pattern, SubPatterns> apriori_gen(const std::set<Pattern>& mdp) {
+    PRINTLN( SPACES( 15 ) << "-> " << __FUNCTION__ << ": " << mdp );
 
-    /* apriori-gen */
-
-    std::map<Pattern, SubPatterns> c;
+    std::map<Pattern, SubPatterns> candidate_patterns;
     
     // join step
     for ( auto i = mdp.cbegin(); i != mdp.cend(); ++i ) {
@@ -43,7 +38,7 @@ std::map<Pattern, SubPatterns> gen_candidate_co_occ(const std::set<Pattern>& mdp
         for ( auto j = i; j != mdp.cend(); ++j ) {
             const Pattern& pattern2 = *j;
             assert( pattern1.size() == pattern2.size() );
-
+            
             // check if the first k-1 elements of p1 and p2 are equals
             const std::vector<EventType> v1( pattern1.cbegin(), pattern1.cend() );
             const std::vector<EventType> v2( pattern2.cbegin(), pattern2.cend() );
@@ -52,16 +47,16 @@ std::map<Pattern, SubPatterns> gen_candidate_co_occ(const std::set<Pattern>& mdp
                 if ( v1.back() < v2.back() ) {
                     Pattern p_union;
                     std::set_union( pattern1.cbegin(), pattern1.cend(), pattern2.cbegin(), pattern2.cend(),
-                                    std::inserter( p_union, p_union.end() ) );
-                    c[p_union].first = pattern1;
-                    c[p_union].second = pattern2;
+                                   std::inserter( p_union, p_union.end() ) );
+                    candidate_patterns[p_union].first = pattern1;
+                    candidate_patterns[p_union].second = pattern2;
                 }
             }
         }
     }
     
     // prune step
-    for ( auto i = c.cbegin(); i != c.cend(); ) {
+    for ( auto i = candidate_patterns.cbegin(); i != candidate_patterns.cend(); ) {
         const Pattern& pattern = (*(i)).first;
         
         auto subset_count = pattern.size();
@@ -74,8 +69,38 @@ std::map<Pattern, SubPatterns> gen_candidate_co_occ(const std::set<Pattern>& mdp
         }
         
         assert( existing_subset_count <= subset_count );
-        if ( existing_subset_count < subset_count ) { c.erase( i++ ); }
+        if ( existing_subset_count < subset_count ) { candidate_patterns.erase( i++ ); }
         else { ++i; }
+    }
+    
+    PRINTLN( SPACES( 15 ) << "<- " << __FUNCTION__ << ": " << candidate_patterns );
+    return candidate_patterns;
+}
+
+std::map<TimeSlot, std::map<Pattern, SubPatterns>> gen_candidate_co_occ(const std::map<TimeSlot, std::map<Pattern, SubPatterns>> prev_c,
+                                                                        const std::set<Pattern>& mdp) {
+    PRINTLN( SPACES( 10 ) << "-> " << __FUNCTION__ );
+    assert ( std::adjacent_find( mdp.cbegin(), mdp.cend(), [](const Pattern& pattern1, const Pattern& pattern2) {
+        return pattern1.size() != pattern2.size();
+    } ) == mdp.end() );
+    
+    // generate patterns of size k+1 using mdcops of size k
+    std::map<Pattern, SubPatterns> candidate_patterns = apriori_gen( mdp );
+    
+    std::map<TimeSlot, std::map<Pattern, SubPatterns>> c;
+    
+    // prev_c contains - for each time slot - the patterns found to be spatial prevalent
+    for ( const auto& pair : prev_c ) {
+        const TimeSlot time_slot = pair.first;
+        
+        // for each candidate pattern, check if in the current time slot its subsets exist
+        for ( const auto& pair : candidate_patterns ) {
+            const Pattern& pattern = pair.first;
+            const SubPatterns& subpatterns = pair.second;
+            
+            bool subsets_exist = true;
+            if ( subsets_exist ) { c[time_slot].insert( { pattern, subpatterns } ); }
+        }
     }
     
     PRINTLN( SPACES( 10 ) << "<- " << __FUNCTION__ << ": " << c );
@@ -347,6 +372,14 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
         cmdp[k].insert( pattern );
     }
     
+    std::map<size_t, std::map<TimeSlot, std::map<Pattern, SubPatterns>>> c;
+    for ( int time_slot = first_time_slot; time_slot < first_time_slot + time_slot_count; ++time_slot ) {
+        for ( const auto& event_type : e ) {
+            const Pattern pattern{ event_type };
+            c[k][time_slot].insert( { pattern, {} } );
+        }
+    }
+    
     std::map<size_t, std::map<TimeSlot, std::map<Pattern, Table>>> t;  // pattern instances
     for ( int time_slot = first_time_slot; time_slot < first_time_slot + time_slot_count; ++time_slot ) {
         for ( const auto& pair : st.objects_by_event_type ) {
@@ -367,32 +400,42 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
     }
     
     std::map<Pattern, std::vector<float>> indexes_by_pattern;  // pattern spatial indexes
-
+    
     // algorithm
     while ( !cmdp[k].empty() ) {
         // compute mdcops of size k+1
         std::cout << std::setw( 5 ) << std::left << " " << "Iterating for k=" << k << " (computing k=" << k+1 << ")..." << std::endl;
         
         // 1. generate candidate patterns of size k+1 from mdcops of size k
-        std::map<TimeSlot, std::map<Pattern, SubPatterns>> c;
-        c[first_time_slot] = gen_candidate_co_occ( cmdp[k] );
+        c[k+1] = gen_candidate_co_occ( c[k], cmdp[k] );
         
         // initialize the time prevalence table
         std::map<Pattern, float> tp;
-        for ( const auto& pair : c[first_time_slot] ) {
-            const Pattern& candidate_pattern = pair.first;
-            tp[candidate_pattern] = 0.f;
+        for ( const auto& pair : c[k+1] ) {
+            for ( const auto& pair2 : pair.second ) {
+                const Pattern& candidate_pattern = pair2.first;
+                tp[candidate_pattern] = 0.f;
+            }
         }
         
         // for each time slot
         for ( TimeSlot time_slot = first_time_slot; time_slot < first_time_slot+time_slot_count; ++time_slot ) {
             std::cout << std::setw( 10 ) << std::left << " " << "Iterating for time_slot=" << time_slot << "..." << std::endl;
+            PRINTLN( SPACES( 15 ) << "c: " << c[k+1][time_slot] );
             
             // 2. given a set of candidate patterns, generate spatial row instances of size k by reusing instances of size k+1
-            t[k+1][time_slot] = gen_co_occ_inst( c[time_slot], t[k][time_slot], d );
+            t[k+1][time_slot] = gen_co_occ_inst( c[k+1][time_slot], t[k][time_slot], d );
             
             // 3. find the spatial prevalent patterns from the row instances
             const std::set<Pattern> sp = find_spatial_prev_co_occ( st.objects_by_event_type, t[k+1][time_slot], spt, indexes_by_pattern );
+            
+            // from all candidate patterns used in this time slot, remove the candidates which are not spatial prevalent
+            for ( auto i = c[k+1][time_slot].begin(); i != c[k+1][time_slot].end(); ) {
+                const Pattern& pattern = (*i).first;
+                
+                if ( !sp.count( pattern ) ) { c[k+1][time_slot].erase( i++ ); }
+                else { ++i; }
+            }
             
             // 4. update the time prevalence table using the spatial prevalent patterns
             find_time_index( tp, sp, time_slot_count );
@@ -400,9 +443,6 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
             // 5. find time prevalent patterns from the time prevalence table (also prune patterns from the time prevalence table that will
             // not be time prevalent even if they are spatial prevalent in the remaining time slots)
             cmdp[k+1] = find_time_prev_co_occ( tp, tpt, time_slot_count, time_slot );
-            
-            // for the next time slot, use as candidate patterns all the patterns (future possible mdcops) found in this time slot
-            for ( const Pattern& mdcop : cmdp[k+1] ) { c[time_slot+1][mdcop] = c[time_slot][mdcop]; }
         }
         
         // after processing the last time slot, cmdp[k+1] contains all the mdcops of size k+1

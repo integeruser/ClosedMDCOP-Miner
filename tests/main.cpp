@@ -13,8 +13,8 @@
 #include "object.hpp"
 
 
-extern std::map<Pattern, SubPatterns> gen_candidate_co_occ(const std::set<Pattern>&);
-TEST_CASE( "gen_candidate_co_occ", "[algorithm]" ) {
+extern std::map<Pattern, SubPatterns> apriori_gen(const std::set<Pattern>&);
+TEST_CASE( "apriori_gen", "[algorithm]" ) {
     EventType a{ "A" };
     EventType b{ "B" };
     EventType c{ "C" };
@@ -23,7 +23,7 @@ TEST_CASE( "gen_candidate_co_occ", "[algorithm]" ) {
     SECTION( "" ) {
         std::set<Pattern> mdp{};
         
-        std::map<Pattern, SubPatterns> candidate_patterns = gen_candidate_co_occ( mdp );
+        std::map<Pattern, SubPatterns> candidate_patterns = apriori_gen( mdp );
         
         std::map<Pattern, SubPatterns> expected_candidate_patterns{};
         REQUIRE( expected_candidate_patterns == candidate_patterns );
@@ -31,7 +31,7 @@ TEST_CASE( "gen_candidate_co_occ", "[algorithm]" ) {
     SECTION( "" ) {
         std::set<Pattern> mdp{ { a }, { b }, { c }, { d } };
         
-        std::map<Pattern, SubPatterns> candidate_patterns = gen_candidate_co_occ( mdp );
+        std::map<Pattern, SubPatterns> candidate_patterns = apriori_gen( mdp );
         
         std::map<Pattern, SubPatterns> expected_candidate_patterns{
             { { a, b }, { { a }, { b } } },
@@ -46,7 +46,7 @@ TEST_CASE( "gen_candidate_co_occ", "[algorithm]" ) {
     SECTION( "" ) {
         std::set<Pattern> mdp{ { a, b }, { b, c } };
         
-        std::map<Pattern, SubPatterns> candidate_patterns = gen_candidate_co_occ( mdp );
+        std::map<Pattern, SubPatterns> candidate_patterns = apriori_gen( mdp );
         
         std::map<Pattern, SubPatterns> expected_candidate_patterns{};
         REQUIRE( expected_candidate_patterns == candidate_patterns );
@@ -54,7 +54,7 @@ TEST_CASE( "gen_candidate_co_occ", "[algorithm]" ) {
     SECTION( "" ) {
         std::set<Pattern> mdp{ { a, b }, { b, c }, { a, c } };
         
-        std::map<Pattern, SubPatterns> candidate_patterns = gen_candidate_co_occ( mdp );
+        std::map<Pattern, SubPatterns> candidate_patterns = apriori_gen( mdp );
         
         std::map<Pattern, SubPatterns> expected_candidate_patterns{
             { { a, b, c }, { { a, b }, { a, c } } }
@@ -64,7 +64,7 @@ TEST_CASE( "gen_candidate_co_occ", "[algorithm]" ) {
     SECTION( "" ) {
         std::set<Pattern> mdp{ { "1", "2", "3" }, { "1", "2", "4" }, { "1", "3", "4" }, { "1", "3", "5" }, { "2", "3", "4" } };
         
-        std::map<Pattern, SubPatterns> candidate_patterns = gen_candidate_co_occ( mdp );
+        std::map<Pattern, SubPatterns> candidate_patterns = apriori_gen( mdp );
         
         std::map<Pattern, SubPatterns> expected_candidate_patterns{
             { { "1", "2", "3", "4" }, { { "1", "2", "3" }, { "1", "2", "4" } } },
