@@ -26,55 +26,95 @@
 #endif
 
 
-std::map<Pattern, SubPatterns> apriori_gen(const std::set<Pattern>& mdp) {
-    PRINTLN( SPACES( 15 ) << "-> " << __FUNCTION__ << ": " << mdp );
+bool exist_all_subsets(const Pattern& superset_pattern, const std::set<Pattern>& patterns) {
+    // check if patterns contains all subsets of superset_pattern
+    
+    const size_t subset_count = superset_pattern.size();
+    
+    unsigned existing_subset_count = 0;
+    for ( const Pattern& pattern : patterns ) {
+        if ( std::includes( superset_pattern.begin(), superset_pattern.end(), pattern.begin(), pattern.end() ) ) {
+            // pattern is included in superset_pattern: increment the count of subsets found
+            ++existing_subset_count;
+        }
+    }
+    
+    assert( existing_subset_count <= subset_count );
+    return existing_subset_count == subset_count;
+}
+bool exist_all_subsets(const Pattern& superset_pattern, const std::map<Pattern, SubPatterns>& patterns_with_subpatterns) {
+    std::set<Pattern> patterns;
+    
+    for ( const auto& pair : patterns_with_subpatterns ) {
+        const Pattern& pattern = pair.first;
+        
+        patterns.insert( pattern );
+    }
+    
+    return exist_all_subsets( superset_pattern, patterns );
+}
 
-    std::map<Pattern, SubPatterns> candidate_patterns;
+std::map<Pattern, SubPatterns> apriori_gen(const std::set<Pattern>& patterns) {
+    PRINTLN( SPACES( 15 ) << "-> " << __FUNCTION__ << ": " << patterns );
+
+    // given a set of patterns of size k, generate superset patterns of size k+1
+    
+    std::map<Pattern, SubPatterns> superset_patterns;
     
     // join step
-    for ( auto i = mdp.cbegin(); i != mdp.cend(); ++i ) {
+    for ( auto i = patterns.cbegin(); i != patterns.cend(); ++i ) {
         const Pattern& pattern1 = *i;
         
-        for ( auto j = i; j != mdp.cend(); ++j ) {
+        for ( auto j = i; j != patterns.cend(); ++j ) {
             const Pattern& pattern2 = *j;
             assert( pattern1.size() == pattern2.size() );
             
-            // check if the first k-1 elements of p1 and p2 are equals
-            const std::vector<EventType> v1( pattern1.cbegin(), pattern1.cend() );
-            const std::vector<EventType> v2( pattern2.cbegin(), pattern2.cend() );
-            if ( std::equal( v1.begin(), v1.end()-1, v2.begin() ) ) {
-                // check if the last element of p1 is less then the last element of p2
-                if ( v1.back() < v2.back() ) {
-                    Pattern p_union;
-                    std::set_union( pattern1.cbegin(), pattern1.cend(), pattern2.cbegin(), pattern2.cend(),
-                                   std::inserter( p_union, p_union.end() ) );
-                    candidate_patterns[p_union].first = pattern1;
-                    candidate_patterns[p_union].second = pattern2;
+            // check if the first k-1 event types of pattern1 and pattern2 are identical
+            
+            assert( pattern1.size() == pattern2.size() );
+            const size_t k = pattern1.size();
+            
+            bool first_k_event_types_identical = true;
+            auto m = pattern1.cbegin(), n = pattern2.cbegin();
+            for ( int o = 0; o < k-1; ++o ) {
+                const EventType event_type1 = *m;
+                const EventType event_type2 = *n;
+                
+                if ( event_type1 != event_type2 ) {
+                    first_k_event_types_identical = false;
+                    break;
+                }
+                
+                ++m;
+                ++n;
+            }
+            if ( first_k_event_types_identical ) {
+                const EventType last_event_type1 = *m;
+                const EventType last_event_type2 = *n;
+                
+                // check if the last event type of pattern1 is less then the last element of pattern2
+                if ( last_event_type1 < last_event_type2 ) {
+                    // join pattern1 and pattern2
+                    Pattern superset_pattern;
+                    std::set_union( pattern1.begin(), pattern1.end(), pattern2.begin(), pattern2.end(),
+                                   std::inserter( superset_pattern, superset_pattern.end() ) );
+                    
+                    superset_patterns.insert( { superset_pattern, { pattern1, pattern2 } } );
                 }
             }
         }
     }
     
-    // prune step
-    for ( auto i = candidate_patterns.cbegin(); i != candidate_patterns.cend(); ) {
-        const Pattern& pattern = (*(i)).first;
+    // prune step: delete all generated patterns of size k+1 if at least one of its subsets of size k doesn't exist in patterns
+    for ( auto i = superset_patterns.cbegin(); i != superset_patterns.cend(); ) {
+        const Pattern& superset_pattern = (*i).first;
         
-        auto subset_count = pattern.size();
-        int existing_subset_count = 0;
-        for ( const Pattern& prev_pattern : mdp ) {
-            // check if prev_pattern is subset of pattern
-            if ( std::includes( pattern.begin(), pattern.end(), prev_pattern.begin(), prev_pattern.end() ) ) {
-                existing_subset_count++;
-            }
-        }
-        
-        assert( existing_subset_count <= subset_count );
-        if ( existing_subset_count < subset_count ) { candidate_patterns.erase( i++ ); }
-        else { ++i; }
+        if ( exist_all_subsets( superset_pattern, patterns ) ) { ++i; }
+        else { superset_patterns.erase( i++ ); }
     }
     
-    PRINTLN( SPACES( 15 ) << "<- " << __FUNCTION__ << ": " << candidate_patterns );
-    return candidate_patterns;
+    PRINTLN( SPACES( 15 ) << "<- " << __FUNCTION__ << ": " << superset_patterns );
+    return superset_patterns;
 }
 
 std::map<TimeSlot, std::map<Pattern, SubPatterns>> gen_candidate_co_occ(const std::map<TimeSlot, std::map<Pattern, SubPatterns>> prev_c,
@@ -86,20 +126,22 @@ std::map<TimeSlot, std::map<Pattern, SubPatterns>> gen_candidate_co_occ(const st
     
     // generate patterns of size k+1 using mdcops of size k
     std::map<Pattern, SubPatterns> candidate_patterns = apriori_gen( mdp );
-    
+
     std::map<TimeSlot, std::map<Pattern, SubPatterns>> c;
+
+    // prev_c contains - for each time slot - the candidate patterns found to be spatial prevalent patterns
     
-    // prev_c contains - for each time slot - the patterns found to be spatial prevalent
+    // for each time slot
     for ( const auto& pair : prev_c ) {
         const TimeSlot time_slot = pair.first;
+        const std::map<Pattern, SubPatterns>& prev_candidate_patterns = pair.second;
         
-        // for each candidate pattern, check if in the current time slot its subsets exist
+        // for each candidate pattern of size k+1, check if all its subsets of size k exist
         for ( const auto& pair : candidate_patterns ) {
-            const Pattern& pattern = pair.first;
+            const Pattern& candidate_pattern = pair.first;
             const SubPatterns& subpatterns = pair.second;
-            
-            bool subsets_exist = true;
-            if ( subsets_exist ) { c[time_slot].insert( { pattern, subpatterns } ); }
+
+            if ( exist_all_subsets( candidate_pattern, prev_candidate_patterns ) ) { c[time_slot].insert( { candidate_pattern, subpatterns } ); }
         }
     }
     
