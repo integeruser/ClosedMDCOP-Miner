@@ -100,13 +100,13 @@ int main(int argc, const char *argv[]) {
     std::cout << std::setw( 5 ) << std::left << " " << "time_slot_n: " << time_slot_n << std::endl;
     std::cout << std::endl;
     
-    std::shared_ptr<INeighborRelation> d;
-    if ( distance == "euclidean" ) { d = std::make_shared<EuclideanDistance>( dt ); }
-    else { d = std::make_shared<LatLonDistance>( dt ); }
+    std::shared_ptr<INeighborRelation> r;
+    if ( distance == "euclidean" ) { r = std::make_shared<EuclideanDistance>( dt ); }
+    else { r = std::make_shared<LatLonDistance>( dt ); }
     
     // run the algorithm and print results
     std::cout << "Starting ClosedMDCOP..." << std::endl;
-    std::map<size_t, std::set<Pattern>> cmdp = mine_closed_mdcops( dataset.event_types, dataset, { time_slot_s, time_slot_n }, d, spt, tpt );
+    std::map<size_t, std::set<Pattern>> cmdp = mine_closed_mdcops( dataset.event_types, dataset, { time_slot_s, time_slot_n }, r, spt, tpt );
     std::cout << std::endl;
 
     std::cout << "Closed Mixed-Drove Spatiotemporal Co-Occurrence Patterns: " << std::endl;

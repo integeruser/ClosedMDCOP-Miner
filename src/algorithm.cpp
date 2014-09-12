@@ -353,7 +353,7 @@ void prune_non_closed(std::map<size_t, std::set<Pattern>>& cmdp, const size_t l,
 
 std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>& e, const Dataset& st,
                                                        const std::pair<unsigned, unsigned> tf,
-                                                       const std::shared_ptr<INeighborRelation> d,
+                                                       const std::shared_ptr<INeighborRelation> r,
                                                        const float spt, const float tpt) {
     unsigned first_time_slot = tf.first, time_slot_count = tf.second;
     assert( first_time_slot >= 0 );
@@ -424,7 +424,7 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
             PRINTLN( SPACES( 15 ) << "c: " << c[k+1][time_slot] );
             
             // 2. given a set of candidate patterns, generate spatial row instances of size k by reusing instances of size k+1
-            t[k+1][time_slot] = gen_co_occ_inst( c[k+1][time_slot], t[k][time_slot], d );
+            t[k+1][time_slot] = gen_co_occ_inst( c[k+1][time_slot], t[k][time_slot], r );
             
             // 3. find the spatial prevalent patterns from the row instances
             const std::set<Pattern> sp = find_spatial_prev_co_occ( st.objects_by_event_type, t[k+1][time_slot], spt, indexes_by_pattern );

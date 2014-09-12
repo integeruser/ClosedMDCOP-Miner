@@ -123,9 +123,9 @@ TEST_CASE( "gen_co_occ_inst", "[algorithm]" ) {
             { { b, c }, table6 },
         };
         
-        const std::shared_ptr<INeighborRelation> d = std::make_shared<EuclideanDistance>( 0.45f );
+        const std::shared_ptr<INeighborRelation> r = std::make_shared<EuclideanDistance>( 0.45f );
         
-        const std::map<Pattern, Table> t = gen_co_occ_inst( candidate_patterns, prev_t, d );
+        const std::map<Pattern, Table> t = gen_co_occ_inst( candidate_patterns, prev_t, r );
 
         std::map<Pattern, Table> expected_t;
         expected_t[{ a, b, c }].insert( { { a3, b4 }, { c1 } } );
