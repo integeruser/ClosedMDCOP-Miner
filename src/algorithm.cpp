@@ -336,9 +336,14 @@ std::set<Pattern> find_time_prev_co_occ(std::map<Pattern, float>& tp, const floa
 
 void prune_non_closed(std::map<size_t, std::set<Pattern>>& cmdp, const size_t l,
                       const std::map<Pattern, std::vector<float>>& indexes_by_pattern) {
+    PRINTLN( SPACES( 5 ) << "-> " << __FUNCTION__ );
+
     // prune non closed patterns
     
-    if ( l <= 2 ) { return; }
+    if ( l <= 2 ) {
+        PRINTLN( SPACES( 5 ) << "<- " << __FUNCTION__ );
+        return;
+    }
     
     // for each pattern of size l-1
     for ( auto i = cmdp[l-1].cbegin(); i != cmdp[l-1].cend(); ) {
@@ -354,15 +359,22 @@ void prune_non_closed(std::map<size_t, std::set<Pattern>>& cmdp, const size_t l,
                 
                 if ( pattern_partecipation_indexes == pattern2_partecipation_indexes ) {
                     exist_superset_identical_partecipation_indexes = true;
+                    PRINTLN( SPACES( 10 ) << pattern << ": " << pattern_partecipation_indexes );
+                    PRINTLN( SPACES( 10 ) << pattern2 << ": " << pattern2_partecipation_indexes );
                     break;
                 }
             }
         }
         
         // if a superset with identical partecipation indexes exists, the pattern is not closed: delete it
-        if ( exist_superset_identical_partecipation_indexes ) { cmdp[l-1].erase( i++ ); }
+        if ( exist_superset_identical_partecipation_indexes ) {
+            PRINTLN( SPACES( 10 ) << pattern << " pruned" );
+            cmdp[l-1].erase( i++ );
+        }
         else { ++i; }
     }
+    
+    PRINTLN( SPACES( 5 ) << "<- " << __FUNCTION__ );
 }
 
 
@@ -435,7 +447,6 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
         // for each time slot
         for ( TimeSlot time_slot = first_time_slot; time_slot < first_time_slot+time_slot_count; ++time_slot ) {
             std::cout << std::setw( 10 ) << std::left << " " << "Iterating for time_slot=" << time_slot << "..." << std::endl;
-            PRINTLN( SPACES( 15 ) << "c: " << c[k+1][time_slot] );
             
             // 2. given a set of candidate patterns, generate spatial row instances of size k by reusing instances of size k+1
             t[k+1][time_slot] = gen_co_occ_inst( c[k+1][time_slot], t[k][time_slot], r );
