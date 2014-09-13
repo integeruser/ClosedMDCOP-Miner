@@ -26,20 +26,21 @@ inline float deg_to_rad(float deg) {
 }
 
 bool LatLonDistance::neighbors(const std::shared_ptr<Object>& object1, const std::shared_ptr<Object>& object2) {
-    // see http://stackoverflow.com/questions/27928/how-do-i-calculate-distance-between-two-latitude-longitude-points
+    // see http://www.movable-type.co.uk/scripts/latlong.html
     const float lat1 = object1->x;
     const float lon1 = object1->y;
     const float lat2 = object2->x;
     const float lon2 = object2->y;
     
-    static const float R = 6371;
-    float d_lat = deg_to_rad( lat2-lat1 );
-    float d_lon = deg_to_rad( lon2-lon1 );
+    static const float R = 6371;  // km
+    const float φ1 = deg_to_rad( lat1 );
+    const float φ2 = deg_to_rad( lat2 );
+    const float Δφ = deg_to_rad( lat2-lat1 );
+    const float Δλ = deg_to_rad( lon2-lon1 );
     
-    float a = sinf( d_lat/2.f ) * sinf( d_lat/2.f ) + cosf( deg_to_rad( lat1 ) ) * cosf( deg_to_rad( lat2 ) )
-        * sinf( d_lon/2.f ) * sinf( d_lon/2.f );
-    float c = 2*atan2f( sqrtf( a ), sqrtf( 1-a ) );
+    const float a = sinf( Δφ/2 ) * sinf( Δφ/2 ) + cosf( φ1 ) * cosf( φ2 ) * sinf( Δλ/2 ) * sinf( Δλ/2 );
+    const float c = 2 * atan2f( sqrtf( a ), sqrtf( 1-a ) );
     
-    float d = R*c;
+    const float d = R * c;
     return d <= distance_threshold;
 }
