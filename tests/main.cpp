@@ -74,7 +74,7 @@ TEST_CASE( "apriori_gen", "[algorithm]" ) {
 }
 
 
-extern std::map<Pattern, Table> gen_co_occ_inst(const std::map<Pattern, SubPatterns>&, const std::map<Pattern, Table>&, const std::shared_ptr<INeighborRelation>);
+extern std::map<Pattern, TableInstance> gen_co_occ_inst(const std::map<Pattern, SubPatterns>&, const std::map<Pattern, TableInstance>&, const std::shared_ptr<INeighborRelation>);
 TEST_CASE( "gen_co_occ_inst", "[algorithm]" ) {
     const EventType a{ "A" };
     const EventType b{ "B" };
@@ -96,28 +96,28 @@ TEST_CASE( "gen_co_occ_inst", "[algorithm]" ) {
     const std::shared_ptr<Object> c3 = std::make_shared<Object>( c, 3, 6.7f, 3, 0 );
     
     SECTION( "" ) {
-        const Table table4{
-            { { a1 }, b1 },
-            { { a2 }, b4 },
-            { { a3 }, b4 },
+        const TableInstance table4{
+            { { a1 }, { b1 } },
+            { { a2 }, { b4 } },
+            { { a3 }, { b4 } },
         };
         
-        const Table table5{
-            { { a1 }, c2 },
-            { { a3 }, c1 },
+        const TableInstance table5{
+            { { a1 }, { c2 } },
+            { { a3 }, { c1 } },
         };
         
-        const Table table6{
-            { { b2 }, c1 },
-            { { b4 }, c1 },
-            { { b5 }, c3 },
+        const TableInstance table6{
+            { { b2 }, { c1 } },
+            { { b4 }, { c1 } },
+            { { b5 }, { c3 } },
         };
         
         const std::map<Pattern, SubPatterns> candidate_patterns{
             { { a, b, c }, { { a, b }, { a, c } } }
         };
         
-        const std::map<Pattern, Table> prev_t{
+        const std::map<Pattern, TableInstance> prev_t{
             { { a, b }, table4 },
             { { a, c }, table5 },
             { { b, c }, table6 },
@@ -125,16 +125,16 @@ TEST_CASE( "gen_co_occ_inst", "[algorithm]" ) {
         
         const std::shared_ptr<INeighborRelation> r = std::make_shared<EuclideanDistance>( 0.45f );
         
-        const std::map<Pattern, Table> t = gen_co_occ_inst( candidate_patterns, prev_t, r );
+        const std::map<Pattern, TableInstance> t = gen_co_occ_inst( candidate_patterns, prev_t, r );
 
-        std::map<Pattern, Table> expected_t;
+        std::map<Pattern, TableInstance> expected_t;
         expected_t[{ a, b, c }].insert( { { a3, b4 }, { c1 } } );
         REQUIRE( expected_t == t );
     }
 }
 
 
-extern std::set<Pattern> find_spatial_prev_co_occ(const std::map<EventType, std::set<std::shared_ptr<Object>>>&, const std::map<Pattern, Table>&, float, std::map<Pattern, std::vector<float>>&);
+extern std::set<Pattern> find_spatial_prev_co_occ(const std::map<EventType, std::set<std::shared_ptr<Object>>>&, const std::map<Pattern, TableInstance>&, float, std::map<Pattern, std::vector<float>>&);
 TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
     const EventType a{ "A" };
     const EventType b{ "B" };
@@ -146,8 +146,8 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
     
     const Pattern p1{ a, b };
     
-    const Table table1{
-        { { a1 }, b1 },
+    const TableInstance table1{
+        { { a1 }, { b1 } },
     };
     
     const std::map<EventType, std::set<std::shared_ptr<Object>>> objects_by_type{
@@ -156,7 +156,7 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
     };
     
     SECTION( "" ) {
-        const std::map<Pattern, Table> t1{
+        const std::map<Pattern, TableInstance> t1{
             { p1, table1 },
         };
         

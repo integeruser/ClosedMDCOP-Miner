@@ -150,92 +150,63 @@ std::map<TimeSlot, std::map<Pattern, SubPatterns>> gen_candidate_co_occ(const st
 }
 
 
-Table join(const Table& t1, const Table& t2, const std::shared_ptr<INeighborRelation> d) {
+TableInstance join(const TableInstance& table1, const TableInstance& table2, const std::shared_ptr<INeighborRelation> d) {
     PRINTLN( SPACES( 20 ) << "-> " << __FUNCTION__ );
 
-    Table t;
+    // each table is a map which contains all the instances of size k:
+    //  - the key is a set of objects that represent the first common k-1 objects of some instances
+    //  - the value is a set of objects which represent the k-nth element of each instance
+    // e.g
+    // key: { a1, b1, c1 }
+    // values { d1, d2, d5 }
+    // the instances referenced by this key are: { a1, b1, c1, d1 }, { a1, b1, c1, d2 }, { a1, b1, c1, d5 }
     
-    // sort-merge join http://www.dcs.ed.ac.uk/home/tz/phd/thesis/node20.htm
-    auto i = t1.begin();
-    auto j = t2.begin();
-    while ( i != t1.end() && j != t2.end() ) {
-        const RowInstance& row_instance1 = *(i);
-        const RowInstance& row_instance2 = *(j);
+    TableInstance table;
+    
+    for( const auto& pair1 : table1 ) {
+        const std::set<std::shared_ptr<Object>>& pair1_first_common_objects = pair1.first;
+        const std::set<std::shared_ptr<Object>>& pair1_last_objects = pair1.second;
         
-        const std::set<std::shared_ptr<Object>>& prev_row_instance1 = row_instance1.first;
-        const std::shared_ptr<Object>& object1 = row_instance1.second;
-        const std::set<std::shared_ptr<Object>>& prev_row_instance2 = row_instance2.first;
-        const std::shared_ptr<Object>& object2 = row_instance2.second;
-        
-        if ( prev_row_instance1 < prev_row_instance2 ) { ++i; }
-        else if ( prev_row_instance1 > prev_row_instance2 ) { ++j; }
-        else {
-            if ( d->neighbors( object1, object2 ) ) {
-                std::set<std::shared_ptr<Object>> tmp( prev_row_instance1 );
-                tmp.insert( object1 );
-                RowInstance row_instance{ tmp, object2 };
-                t.insert( row_instance );
-            }
-
-            auto j_p = std::next( j );
-            while ( j_p != t2.end() ) {
-                const RowInstance& i2_p = *(j_p);
-                
-                const std::set<std::shared_ptr<Object>>& prev_row_instance2_p = i2_p.first;
-                const std::shared_ptr<Object>& object2_p = i2_p.second;
-                if ( prev_row_instance1 == prev_row_instance2_p ) {
-                    if ( d->neighbors( object1, object2_p ) ) {
-                        std::set<std::shared_ptr<Object>> tmp( prev_row_instance1 );
-                        tmp.insert( object1 );
-                        RowInstance row_instance{ tmp, object2_p };
-                        t.insert( row_instance );
-                    }
-                }
-                
-                ++j_p;
-            }
-
-            auto i_p = std::next( i );
-            while ( i_p != t1.end() ) {
-                const RowInstance& i1_p = *(i_p);
-                
-                const std::set<std::shared_ptr<Object>>& prev_row_instance1_p = i1_p.first;
-                const std::shared_ptr<Object>& object1_p = i1_p.second;
-                if ( prev_row_instance1_p == prev_row_instance2 ) {
-                    if ( d->neighbors( object1_p, object2 ) ) {
-                        std::set<std::shared_ptr<Object>> tmp( prev_row_instance1_p );
-                        tmp.insert( object1_p );
-                        RowInstance row_instance{ tmp, object2 };
-                        t.insert( row_instance );
-                    }
-                }
-                
-                ++i_p;
-            }
+        for( const auto& pair2 : table2 ) {
+            const std::set<std::shared_ptr<Object>>& pair2_first_common_objects = pair2.first;
+            const std::set<std::shared_ptr<Object>>& pair2_last_objects = pair2.second;
             
-            ++i;
-            ++j;
+            if ( pair1_first_common_objects == pair2_first_common_objects ) {
+                // for each possible combinations, check which objects are neighbors
+                for ( const std::shared_ptr<Object>& object1 : pair1_last_objects ) {
+                    std::set<std::shared_ptr<Object>> new_first_common_objects{ pair1_first_common_objects };
+                    new_first_common_objects.insert( object1 );
+                    
+                    for ( const std::shared_ptr<Object>& object2 : pair2_last_objects ) {
+                        assert( object1->event_type != object2->event_type );
+                        
+                        if ( d->neighbors( object1, object2 ) ) {
+                            table[new_first_common_objects].insert( object2 );
+                        }
+                    }
+                }
+            }
         }
     }
-
+    
     PRINTLN( SPACES( 20 ) << "<- " << __FUNCTION__ );
-    return t;
+    return table;
 }
 
-std::map<Pattern, Table> gen_co_occ_inst(const std::map<Pattern, SubPatterns>& c, const std::map<Pattern, Table>& prev_t,
-                                         const std::shared_ptr<INeighborRelation> d) {
+std::map<Pattern, TableInstance> gen_co_occ_inst(const std::map<Pattern, SubPatterns>& c, const std::map<Pattern, TableInstance>& prev_t,
+                                                 const std::shared_ptr<INeighborRelation> d) {
     PRINTLN( SPACES( 15 ) << "-> " << __FUNCTION__ );
 
     // generate instances by joining the tables of the two subpatterns
     
-    std::map<Pattern, Table> t;
+    std::map<Pattern, TableInstance> t;
     
     for( const auto& pair : c ) {
         const Pattern& candidate_pattern = pair.first;
         
         const SubPatterns& subpatterns = pair.second;
-        const Table& subpatterns_table1 = prev_t.at( subpatterns.first );
-        const Table& subpatterns_table2 = prev_t.at( subpatterns.second );
+        const TableInstance& subpatterns_table1 = prev_t.at( subpatterns.first );
+        const TableInstance& subpatterns_table2 = prev_t.at( subpatterns.second );
         t[candidate_pattern] = join( subpatterns_table1, subpatterns_table2, d );
     }
 
@@ -245,7 +216,7 @@ std::map<Pattern, Table> gen_co_occ_inst(const std::map<Pattern, SubPatterns>& c
 
 
 std::set<Pattern> find_spatial_prev_co_occ(const std::map<EventType, std::set<std::shared_ptr<Object>>>& objects_by_event_type,
-                                           const std::map<Pattern, Table>& t, float spt,
+                                           const std::map<Pattern, TableInstance>& t, float spt,
                                            std::map<Pattern, std::vector<float>>& indexes_by_pattern) {
     PRINTLN( SPACES( 15 ) << "-> " << __FUNCTION__ );
     assert( spt > 0 && spt <=1 );
@@ -254,19 +225,21 @@ std::set<Pattern> find_spatial_prev_co_occ(const std::map<EventType, std::set<st
     
     for ( const auto& pair : t ) {
         // for each pattern
-        const Table& table = pair.second;
+        const TableInstance& table = pair.second;
         
         // divide objects per object type
         std::map<EventType, std::set<unsigned>> ids_by_event_type;
-        for ( const RowInstance& row_instance : table ) {
-            const std::set<std::shared_ptr<Object>>& objects = row_instance.first;
+        for ( const auto& pair : table ) {
+            const std::set<std::shared_ptr<Object>>& instances_common_objects = pair.first;
             
-            for ( const std::shared_ptr<Object>& object : objects ) {
+            for ( const std::shared_ptr<Object>& object : instances_common_objects ) {
                 ids_by_event_type[object->event_type].insert( object->id );
             }
-            
-            const std::shared_ptr<Object>& object = row_instance.second;
-            if ( object ) { ids_by_event_type[object->event_type].insert( object->id ); }
+
+            const std::set<std::shared_ptr<Object>>& instances_last_objects = pair.second;
+            for ( const std::shared_ptr<Object>& object : instances_last_objects ) {
+                ids_by_event_type[object->event_type].insert( object->id );
+            }
         }
         
         // compute partecipation ratio
@@ -422,18 +395,17 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
         }
     }
     
-    std::map<size_t, std::map<TimeSlot, std::map<Pattern, Table>>> t;  // pattern instances
+    std::map<size_t, std::map<TimeSlot, std::map<Pattern, TableInstance>>> t;  // pattern instances
     for ( int time_slot = first_time_slot; time_slot < first_time_slot + time_slot_count; ++time_slot ) {
         for ( const auto& pair : st.objects_by_event_type ) {
             const EventType& event_type = pair.first;
             
             const Pattern pattern{ event_type };
             
-            Table table;
+            TableInstance table;
             for ( const std::shared_ptr<Object>& object : st.objects_by_event_type.at( event_type ) ) {
                 if ( object->time_slot == time_slot ) {
-                    RowInstance row_instance{ std::set<std::shared_ptr<Object>>{}, { object } };
-                    table.insert( row_instance );
+                    table[std::set<std::shared_ptr<Object>>{}].insert( object );
                 }
             }
             
