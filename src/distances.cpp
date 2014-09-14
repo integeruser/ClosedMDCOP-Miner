@@ -5,20 +5,20 @@
 #include "object.hpp"
 
 
-EuclideanDistance::EuclideanDistance(float distance_threshold) :
-    squared_distance_threshold( distance_threshold*distance_threshold ) {
+EuclideanDistance::EuclideanDistance(float dt) :
+    squared_dt( dt*dt ) {
 }
 
 bool EuclideanDistance::neighbors(const std::shared_ptr<Object>& object1, const std::shared_ptr<Object>& object2) {
     float dx = object1->x-object2->x;
     float dy = object1->y-object2->y;
-    return (dx*dx + dy*dy) <= squared_distance_threshold;
+    return (dx*dx + dy*dy) <= squared_dt;
 }
 
 
 
-LatLonDistance::LatLonDistance(float distance_threshold) :
-    distance_threshold( distance_threshold ) {
+LatLonDistance::LatLonDistance(float dt) :
+    dt( dt ) {
 }
 
 inline float deg_to_rad(float deg) {
@@ -42,5 +42,5 @@ bool LatLonDistance::neighbors(const std::shared_ptr<Object>& object1, const std
     const float c = 2 * atan2f( sqrtf( a ), sqrtf( 1-a ) );
     
     const float d = R * c;
-    return d <= distance_threshold;
+    return d <= dt;
 }

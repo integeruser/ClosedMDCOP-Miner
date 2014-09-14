@@ -9,27 +9,27 @@
 struct INeighborRelation {
     virtual ~INeighborRelation() {}
 
-    virtual bool neighbors(const std::shared_ptr<Object>& object1, const std::shared_ptr<Object>& object2) = 0;
+    virtual bool neighbors(const std::shared_ptr<Object>&, const std::shared_ptr<Object>&) = 0;
 };
 
 
 
 struct EuclideanDistance : public INeighborRelation {
-    const float squared_distance_threshold;
+    const float squared_dt;
     
-    EuclideanDistance(float distance_threshold);
+    EuclideanDistance(float);
     
-    virtual bool neighbors(const std::shared_ptr<Object>& object1, const std::shared_ptr<Object>& object2);
+    virtual bool neighbors(const std::shared_ptr<Object>&, const std::shared_ptr<Object>&);
 };
 
 
 
 struct LatLonDistance : public INeighborRelation {
-    const float distance_threshold;
+    const float dt;
     
-    LatLonDistance(float distance_threshold);
+    LatLonDistance(float);
     
-    virtual bool neighbors(const std::shared_ptr<Object>& object1, const std::shared_ptr<Object>& object2);
+    virtual bool neighbors(const std::shared_ptr<Object>&, const std::shared_ptr<Object>&);
 };
 
 
