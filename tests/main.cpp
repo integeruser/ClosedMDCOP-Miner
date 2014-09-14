@@ -13,6 +13,71 @@
 #include "object.hpp"
 
 
+bool exist_all_subsets(const Pattern&, const std::set<Pattern>&);
+TEST_CASE( "exist_all_subsets", "[algorithm]" ) {
+    const EventType a{ "A" };
+    const EventType b{ "B" };
+    const EventType c{ "C" };
+    
+    SECTION( "") {
+        const Pattern superset_pattern{ a };
+        
+        const std::set<Pattern> patterns{};
+        
+        REQUIRE( exist_all_subsets( superset_pattern, patterns ) );
+    }
+    SECTION( "") {
+        const Pattern superset_pattern{ a, b };
+        
+        const std::set<Pattern> patterns{
+            { a },
+        };
+        
+        REQUIRE( !exist_all_subsets( superset_pattern, patterns ) );
+    }
+    SECTION( "") {
+        const Pattern superset_pattern{ a, b };
+        
+        const std::set<Pattern> patterns{
+            { a },
+            { b },
+        };
+        
+        REQUIRE( exist_all_subsets( superset_pattern, patterns ) );
+    }
+    SECTION( "") {
+        const Pattern superset_pattern{ a, b };
+        
+        const std::set<Pattern> patterns{
+            { a },
+            { c },
+        };
+        
+        REQUIRE( !exist_all_subsets( superset_pattern, patterns ) );
+    }
+    SECTION( "") {
+        const Pattern superset_pattern{ a, b, c };
+        
+        const std::set<Pattern> patterns{
+            { a, b },
+            { b, c },
+        };
+        
+        REQUIRE( !exist_all_subsets( superset_pattern, patterns ) );
+    }
+    SECTION( "") {
+        const Pattern superset_pattern{ a, b, c };
+        
+        const std::set<Pattern> patterns{
+            { a, b },
+            { a, c },
+            { b, c },
+        };
+        
+        REQUIRE( exist_all_subsets( superset_pattern, patterns ) );
+    }
+}
+
 extern std::map<Pattern, SubPatterns> apriori_gen(const std::set<Pattern>&);
 TEST_CASE( "apriori_gen", "[algorithm]" ) {
     EventType a{ "A" };
@@ -161,41 +226,41 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
         };
         
         SECTION( "" ) {
-            const float spt = 0.4;
+            const float p = 0.4;
             
             std::map<Pattern, std::vector<float>> indexes_by_pattern;
             
-            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, spt, indexes_by_pattern );
+            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, indexes_by_pattern );
             
             const std::set<Pattern> expected_result{ p1 };
             REQUIRE( expected_result == result );
         }
         SECTION( "" ) {
-            const float spt = 0.5;
+            const float p = 0.5;
             
             std::map<Pattern, std::vector<float>> indexes_by_pattern;
             
-            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, spt, indexes_by_pattern );
+            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, indexes_by_pattern );
             
             const std::set<Pattern> expected_result{ p1 };
             REQUIRE( expected_result == result );
         }
         SECTION( "" ) {
-            const float spt = 0.6;
+            const float p = 0.6;
             
             std::map<Pattern, std::vector<float>> indexes_by_pattern;
             
-            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, spt, indexes_by_pattern );
+            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, indexes_by_pattern );
             
             const std::set<Pattern> expected_result{};
             REQUIRE( expected_result == result );
         }
         SECTION( "" ) {
-            const float spt = 1;
+            const float p = 1;
             
             std::map<Pattern, std::vector<float>> indexes_by_pattern;
             
-            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, spt, indexes_by_pattern );
+            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, indexes_by_pattern );
             
             const std::set<Pattern> expected_result{};
             REQUIRE( expected_result == result );
@@ -204,7 +269,7 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
 }
 
 
-extern void find_time_index(std::map<Pattern, float>& tp, const std::set<Pattern>& sp, const unsigned time_slot_count);
+extern void find_time_index(std::map<Pattern, float>&, const std::set<Pattern>&, const unsigned);
 TEST_CASE( "find_time_index", "[algorithm]" ) {
     const EventType a{ "A" };
     const EventType b{ "B" };
@@ -236,7 +301,7 @@ TEST_CASE( "find_time_index", "[algorithm]" ) {
 }
 
 
-extern std::set<Pattern> find_time_prev_co_occ(std::map<Pattern, float>& tp, const float tpt, const unsigned time_slot_count, const unsigned time_slot);
+extern std::set<Pattern> find_time_prev_co_occ(std::map<Pattern, float>&, const float, const unsigned, const unsigned);
 TEST_CASE( "find_time_prev_co_occ", "[algorithm]" ) {
     const EventType a{ "A" };
     const EventType b{ "B" };
@@ -256,25 +321,25 @@ TEST_CASE( "find_time_prev_co_occ", "[algorithm]" ) {
         const unsigned time_slot = 0;
         
         SECTION( "" ) {
-            const float tpt = 1.f;
+            const float time = 1.f;
             
-            const std::set<Pattern> mdp = find_time_prev_co_occ( tp, tpt, time_slot_count, time_slot );
+            const std::set<Pattern> mdp = find_time_prev_co_occ( tp, time, time_slot_count, time_slot );
             
             const std::set<Pattern> expected_mdp{};
             REQUIRE( expected_mdp == mdp );
         }
         SECTION( "" ) {
-            const float tpt = 0.4f;
+            const float time = 0.4f;
             
-            const std::set<Pattern> mdp = find_time_prev_co_occ( tp, tpt, time_slot_count, time_slot );
+            const std::set<Pattern> mdp = find_time_prev_co_occ( tp, time, time_slot_count, time_slot );
             
             const std::set<Pattern> expected_mdp{ p1, p2 };
             REQUIRE( expected_mdp == mdp );
         }
         SECTION( "" ) {
-            const float tpt = 0.5f;
+            const float time = 0.5f;
             
-            const std::set<Pattern> mdp = find_time_prev_co_occ( tp, tpt, time_slot_count, time_slot );
+            const std::set<Pattern> mdp = find_time_prev_co_occ( tp, time, time_slot_count, time_slot );
             
             const std::set<Pattern> expected_mdp{ p1 };
             REQUIRE( expected_mdp == mdp );

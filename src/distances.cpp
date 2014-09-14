@@ -27,10 +27,8 @@ inline float deg_to_rad(float deg) {
 
 bool LatLonDistance::neighbors(const std::shared_ptr<Object>& object1, const std::shared_ptr<Object>& object2) {
     // see http://www.movable-type.co.uk/scripts/latlong.html
-    const float lat1 = object1->x;
-    const float lon1 = object1->y;
-    const float lat2 = object2->x;
-    const float lon2 = object2->y;
+    const float lat1 = object1->x, lat2 = object2->x;
+    const float lon1 = object1->y, lon2 = object2->y;
     
     static const float R = 6371;  // km
     const float φ1 = deg_to_rad( lat1 );

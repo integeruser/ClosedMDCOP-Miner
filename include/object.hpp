@@ -7,19 +7,20 @@
 
 
 using EventType = std::string;
+using ObjectId = unsigned;
+using TimeSlot = unsigned;
 
 
 struct Object {
     const EventType event_type;
-    const unsigned id;
+    const ObjectId id;
     const float x, y;
-    const unsigned time_slot;
+    const TimeSlot time_slot;
     
     Object(EventType, unsigned, float, float, unsigned);
 };
 
-std::ostream& operator<< (std::ostream&, const Object&);
-std::ostream& operator<< (std::ostream&, const std::shared_ptr<Object>&);
+std::ostream& operator<<(std::ostream&, const Object&);
 
 
 #endif  // OBJECT_HPP

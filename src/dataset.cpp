@@ -25,11 +25,11 @@ Dataset construct_dataset(std::ifstream& dataset_file) {
         
         EventType event_type;
         float x, y;
-        int time_slot;
+        TimeSlot time_slot;
         // check if the line is well-formed, otherwise skip it
         if ( (iss >> event_type >> x >> y >> time_slot) ) {
             // generate object id: "A0", "B0", "A1", ...
-            unsigned id = (unsigned) dataset.objects_by_event_type[event_type].size();
+            ObjectId id = (ObjectId) dataset.objects_by_event_type[event_type].size();
             
             // add object to dataset
             std::shared_ptr<Object> object = std::make_shared<Object>( event_type, id, x, y, time_slot );
