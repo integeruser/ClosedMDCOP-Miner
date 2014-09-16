@@ -53,7 +53,7 @@ int main(int argc, const char *argv[]) {
         std::cerr << std::setw( 5 ) << std::left << " " << "ERROR: Invalid number of arguments" << std::endl;
         std::cerr << std::endl;
         
-        std::cerr << "Usage: ClosedMDCOP dataset_file_path first_time_slot time_slot_count distance dt p time" << std::endl;
+        std::cerr << "Usage: ClosedMDCOP-Miner dataset_file_path first_time_slot time_slot_count distance dt p time" << std::endl;
         std::cerr << "Parameters:" << std::endl;
         std::cerr << std::setw( 5 ) << std::left << " " << "dataset_file_path: the dataset file" << std::endl;
         std::cerr << std::setw( 5 ) << std::left << " " << "first_time_slot: the starting time slot" << std::endl;
@@ -62,7 +62,7 @@ int main(int argc, const char *argv[]) {
         std::cerr << std::setw( 5 ) << std::left << " " << "dt: the maximum distance for considering two objects as neighbors (0 < dt)" << std::endl;
         std::cerr << std::setw( 5 ) << std::left << " " << "p: the spatial prevalence threshold (0 < p <= 1)" << std::endl;
         std::cerr << std::setw( 5 ) << std::left << " " << "time: the time prevalence threshold (0 < time <= 1)" << std::endl;
-        std::cerr << "Example: ClosedMDCOP dataset.txt 0 3 latlon 2 0.3 0.2" << std::endl;
+        std::cerr << "Example: ClosedMDCOP-Miner dataset.txt 0 3 latlon 2 0.3 0.2" << std::endl;
         return EXIT_FAILURE;
     }
     
@@ -105,7 +105,7 @@ int main(int argc, const char *argv[]) {
     else { r = std::make_shared<LatLonDistance>( dt ); }
     
     // run the algorithm and print results
-    std::cout << "Starting ClosedMDCOP..." << std::endl;
+    std::cout << "Starting ClosedMDCOP-Miner..." << std::endl;
     std::map<size_t, std::set<Pattern>> cmdp = mine_closed_mdcops( dataset.event_types, dataset,
                                                                    { (TimeSlot) first_time_slot, (unsigned) time_slot_count },
                                                                    r, p, time );
