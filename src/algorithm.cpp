@@ -338,8 +338,8 @@ std::set<Pattern> find_time_prev_co_occ(std::map<Pattern, float>& tp, const floa
 }
 
 
-void prune_non_closed(std::map<size_t, std::set<Pattern>>& cmdp, const size_t l,
-                      const std::map<Pattern, std::vector<float>>& indexes_by_pattern) {
+void prune_non_closed_subsets(std::map<size_t, std::set<Pattern>>& cmdp, const size_t l,
+                              const std::map<Pattern, std::vector<float>>& indexes_by_pattern) {
     PRINTLN( SPACES( 5 ) << "-> " << __FUNCTION__ );
 
     // prune non closed patterns of size l-1
@@ -496,7 +496,7 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
         std::cout << std::setw( 5 ) << std::left << " " << "MDCOPs found: " << cmdp[k+1] << std::endl;
 
         // having mdcops of size k+1, it is possible to prune all mdcops of size k which are not closed mdcops
-        prune_non_closed( cmdp, k+1, indexes_by_pattern );
+        prune_non_closed_subsets( cmdp, k+1, indexes_by_pattern );
         
         ++k;
     }
