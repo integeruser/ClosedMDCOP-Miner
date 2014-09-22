@@ -220,7 +220,7 @@ std::map<Pattern, TableInstance> gen_co_occ_inst(const std::map<Pattern, SubPatt
 
 std::set<Pattern> find_spatial_prev_co_occ(const std::map<EventType, std::set<std::shared_ptr<Object>>>& objects_by_event_type,
                                            const std::map<Pattern, TableInstance>& t, float p,
-                                           std::map<Pattern, std::vector<float>>& indexes_by_pattern) {
+                                           std::map<Pattern, std::vector<float>>& spatial_indexes_by_pattern) {
     PRINTLN( SPACES( 15 ) << "-> " << __FUNCTION__ );
     assert( p > 0 && p <=1 );
     
@@ -275,7 +275,7 @@ std::set<Pattern> find_spatial_prev_co_occ(const std::map<EventType, std::set<st
         PRINTLN( SPACES( 20 ) << pattern << ", P.I. " << partecipation_index );
         
         // update the indexes table
-        indexes_by_pattern[pattern].push_back( partecipation_index );
+        spatial_indexes_by_pattern[pattern].push_back( partecipation_index );
     }
     
     PRINTLN( SPACES( 15 ) << "<- " << __FUNCTION__ << ": " << sp );
@@ -339,7 +339,7 @@ std::set<Pattern> find_time_prev_co_occ(std::map<Pattern, float>& tp, const floa
 
 
 void prune_non_closed_subsets(std::map<size_t, std::set<Pattern>>& cmdp, const Pattern& pattern,
-                              const std::map<Pattern, std::vector<float>>& indexes_by_pattern) {
+                              const std::map<Pattern, std::vector<float>>& spatial_indexes_by_pattern) {
     PRINTLN( SPACES( 5 ) << "-> " << __FUNCTION__ );
 
     // prune non closed patterns subsets of pattern
@@ -353,8 +353,8 @@ void prune_non_closed_subsets(std::map<size_t, std::set<Pattern>>& cmdp, const P
             
             // check if subpattern has identical partecipation indexes of pattern
             if ( std::includes( pattern.cbegin(), pattern.cend(), subpattern.cbegin(), subpattern.cend() ) ) {
-                const std::vector<float>& pattern_partecipation_indexes = indexes_by_pattern.at( pattern );
-                const std::vector<float>& subpattern_partecipation_indexes = indexes_by_pattern.at( subpattern );
+                const std::vector<float>& pattern_partecipation_indexes = spatial_indexes_by_pattern.at( pattern );
+                const std::vector<float>& subpattern_partecipation_indexes = spatial_indexes_by_pattern.at( subpattern );
 
                 if ( subpattern_partecipation_indexes == pattern_partecipation_indexes ) {
                     PRINTLN( SPACES( 10 ) << subpattern << " pruned cause " << pattern );
@@ -422,7 +422,7 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
         }
     }
     
-    std::map<Pattern, std::vector<float>> indexes_by_pattern;  // pattern spatial indexes
+    std::map<Pattern, std::vector<float>> spatial_indexes_by_pattern;  // pattern spatial indexes
     
     // algorithm
     while ( !cmdp[k].empty() ) {
@@ -457,7 +457,7 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
             t[k].erase( t[k].find( time_slot ) );
 
             // 3. find which patterns are spatial prevalent
-            const std::set<Pattern> sp = find_spatial_prev_co_occ( st.objects_by_event_type, t[k+1][time_slot], p, indexes_by_pattern );
+            const std::set<Pattern> sp = find_spatial_prev_co_occ( st.objects_by_event_type, t[k+1][time_slot], p, spatial_indexes_by_pattern );
             
             // remove the candidates patterns of the current time slot which are not spatial prevalent patterns
             for ( auto i = c[k+1][time_slot].cbegin(); i != c[k+1][time_slot].cend(); ) {
@@ -487,7 +487,7 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
         std::cout << std::setw( 5 ) << std::left << " " << "MDCOPs found: " << cmdp[k+1] << std::endl;
 
         // having mdcops of size k+1, it is possible to prune all mdcops of size k which are not closed mdcops
-        for ( const Pattern& pattern : cmdp[k+1] ) { prune_non_closed_subsets( cmdp, pattern, indexes_by_pattern ); }
+        for ( const Pattern& pattern : cmdp[k+1] ) { prune_non_closed_subsets( cmdp, pattern, spatial_indexes_by_pattern ); }
         
         ++k;
     }
