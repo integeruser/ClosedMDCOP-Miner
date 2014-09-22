@@ -228,9 +228,9 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
         SECTION( "" ) {
             const float p = 0.4;
             
-            std::map<Pattern, std::vector<float>> indexes_by_pattern;
+            std::map<Pattern, std::vector<float>> spatial_indexes_by_pattern;
             
-            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, indexes_by_pattern );
+            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, spatial_indexes_by_pattern );
             
             const std::set<Pattern> expected_result{ p1 };
             REQUIRE( expected_result == result );
@@ -238,9 +238,9 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
         SECTION( "" ) {
             const float p = 0.5;
             
-            std::map<Pattern, std::vector<float>> indexes_by_pattern;
+            std::map<Pattern, std::vector<float>> spatial_indexes_by_pattern;
             
-            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, indexes_by_pattern );
+            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, spatial_indexes_by_pattern );
             
             const std::set<Pattern> expected_result{ p1 };
             REQUIRE( expected_result == result );
@@ -248,9 +248,9 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
         SECTION( "" ) {
             const float p = 0.6;
             
-            std::map<Pattern, std::vector<float>> indexes_by_pattern;
+            std::map<Pattern, std::vector<float>> spatial_indexes_by_pattern;
             
-            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, indexes_by_pattern );
+            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, spatial_indexes_by_pattern );
             
             const std::set<Pattern> expected_result{};
             REQUIRE( expected_result == result );
@@ -258,9 +258,9 @@ TEST_CASE( "find_spatial_prev_co_occ", "[algorithm]" ) {
         SECTION( "" ) {
             const float p = 1;
             
-            std::map<Pattern, std::vector<float>> indexes_by_pattern;
+            std::map<Pattern, std::vector<float>> spatial_indexes_by_pattern;
             
-            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, indexes_by_pattern );
+            const std::set<Pattern> result = find_spatial_prev_co_occ( objects_by_type, t1, p, spatial_indexes_by_pattern );
             
             const std::set<Pattern> expected_result{};
             REQUIRE( expected_result == result );
