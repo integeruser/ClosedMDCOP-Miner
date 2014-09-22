@@ -291,7 +291,7 @@ void find_time_index(std::map<Pattern, float>& tp, const std::set<Pattern>& sp, 
         tp[pattern] += 1.f/time_slot_count;
     }
     
-    PRINTLN( SPACES( 15 ) << "<- " << __FUNCTION__ );
+    PRINTLN( SPACES( 15 ) << "<- " << __FUNCTION__ << ": " << tp );
 }
 
 
@@ -338,38 +338,29 @@ std::set<Pattern> find_time_prev_co_occ(std::map<Pattern, float>& tp, const floa
 }
 
 
-void prune_non_closed_subsets(std::map<size_t, std::set<Pattern>>& cmdp, const size_t l,
+void prune_non_closed_subsets(std::map<size_t, std::set<Pattern>>& cmdp, const Pattern& pattern,
                               const std::map<Pattern, std::vector<float>>& indexes_by_pattern) {
     PRINTLN( SPACES( 5 ) << "-> " << __FUNCTION__ );
 
-    // prune non closed patterns of size l-1
+    // prune non closed patterns subsets of pattern
+
+    const size_t pattern_size = pattern.size();
     
-    if ( l > 2 ) {
-        // for each pattern of size l-1
-        for ( auto i = cmdp[l-1].cbegin(); i != cmdp[l-1].cend(); ) {
-            const Pattern& pattern = *i;
-        
-            // check if exist at least one superset with identical partecipation indexes
-            bool exist_superset_identical_partecipation_indexes = false;
-        
-            for ( const Pattern& pattern2 : cmdp[l] ) {
-                if ( std::includes( pattern2.cbegin(), pattern2.cend(), pattern.cbegin(), pattern.cend() ) ) {
-                    const std::vector<float>& pattern_partecipation_indexes = indexes_by_pattern.at( pattern );
-                    const std::vector<float>& pattern2_partecipation_indexes = indexes_by_pattern.at( pattern2 );
-                
-                    if ( pattern_partecipation_indexes == pattern2_partecipation_indexes ) {
-                        exist_superset_identical_partecipation_indexes = true;
-                        PRINTLN( SPACES( 10 ) << pattern << ": " << pattern_partecipation_indexes );
-                        PRINTLN( SPACES( 10 ) << pattern2 << ": " << pattern2_partecipation_indexes );
-                        break;
-                    }
+    if ( pattern_size > 2 ) {
+        // for each pattern of size pattern_size-1
+        for ( auto i = cmdp[pattern_size-1].cbegin(); i != cmdp[pattern_size-1].cend(); ) {
+            const Pattern& subpattern = *i;
+            
+            // check if subpattern has identical partecipation indexes of pattern
+            if ( std::includes( pattern.cbegin(), pattern.cend(), subpattern.cbegin(), subpattern.cend() ) ) {
+                const std::vector<float>& pattern_partecipation_indexes = indexes_by_pattern.at( pattern );
+                const std::vector<float>& subpattern_partecipation_indexes = indexes_by_pattern.at( subpattern );
+
+                if ( subpattern_partecipation_indexes == pattern_partecipation_indexes ) {
+                    PRINTLN( SPACES( 10 ) << subpattern << " pruned cause " << pattern );
+                    cmdp[pattern_size-1].erase( i++ );
                 }
-            }
-        
-            // if a superset with identical partecipation indexes exists, the pattern is not closed: delete it
-            if ( exist_superset_identical_partecipation_indexes ) {
-                PRINTLN( SPACES( 10 ) << pattern << " pruned" );
-                cmdp[l-1].erase( i++ );
+                else { ++i; }
             }
             else { ++i; }
         }
@@ -496,7 +487,7 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
         std::cout << std::setw( 5 ) << std::left << " " << "MDCOPs found: " << cmdp[k+1] << std::endl;
 
         // having mdcops of size k+1, it is possible to prune all mdcops of size k which are not closed mdcops
-        prune_non_closed_subsets( cmdp, k+1, indexes_by_pattern );
+        for ( const Pattern& pattern : cmdp[k+1] ) { prune_non_closed_subsets( cmdp, pattern, indexes_by_pattern ); }
         
         ++k;
     }
