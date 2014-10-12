@@ -111,11 +111,16 @@ int main(int argc, const char *argv[]) {
                                                                    r, p, time );
     std::cout << std::endl;
 
-    std::cout << "Closed Mixed-Drove Spatiotemporal Co-Occurrence Patterns: " << std::endl;
-    for ( const auto& pair : cmdp ) {
-        const size_t size = pair.first;
-        const std::set<Pattern>& patterns = pair.second;
-        std::cout << std::setw( 5 ) << std::left << " " << "size=" << size << ": " << patterns << std::endl;
+    if ( cmdp.size() == 0 ) {
+        std::cout << "No Closed Mixed-Drove Spatiotemporal Co-Occurrence Patterns found." << std::endl;
+    }
+    else {
+        std::cout << "Closed Mixed-Drove Spatiotemporal Co-Occurrence Patterns: " << std::endl;
+        for ( const auto& pair : cmdp ) {
+            const size_t size = pair.first;
+            const std::set<Pattern>& patterns = pair.second;
+            std::cout << std::setw( 5 ) << std::left << " " << "size=" << size << " (" << patterns.size() << "): " << patterns << std::endl;
+        }
     }
     
     return EXIT_SUCCESS;
