@@ -358,6 +358,8 @@ void prune_non_closed_subsets(std::map<size_t, std::set<Pattern>>& cmdp, const P
 
                 if ( subpattern_partecipation_indexes == pattern_partecipation_indexes ) {
                     PRINTLN( SPACES( 10 ) << subpattern << " pruned cause " << pattern );
+                    PRINTLN( SPACES( 15 ) << subpattern << ": " << subpattern_partecipation_indexes );
+                    PRINTLN( SPACES( 15 ) << pattern << ": " << pattern_partecipation_indexes );
                     cmdp[pattern_size-1].erase( i++ );
                 }
                 else { ++i; }
@@ -491,7 +493,7 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
         for ( const Pattern& pattern : cmdp[k+1] ) {
             prune_non_closed_subsets( cmdp, pattern, spatial_indexes_by_pattern );
         }
-        if ( prev_mdcop_count > cmdp[k].size() ) { std::cout << std::setw( 5 ) << std::left << " " << "Non closed MDCOPs found!" << std::endl; }
+        if ( prev_mdcop_count > cmdp[k].size() ) { std::cout << std::setw( 5 ) << std::left << " " << "Found non-closed MDCOPs!" << std::endl; }
         
         ++k;
     }
