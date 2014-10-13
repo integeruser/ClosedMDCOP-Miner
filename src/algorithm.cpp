@@ -487,7 +487,11 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
         std::cout << std::setw( 5 ) << std::left << " " << "MDCOPs found (" << cmdp[k+1].size() << "): " << cmdp[k+1] << std::endl;
 
         // having mdcops of size k+1, it is possible to prune all mdcops of size k which are not closed mdcops
-        for ( const Pattern& pattern : cmdp[k+1] ) { prune_non_closed_subsets( cmdp, pattern, spatial_indexes_by_pattern ); }
+        const size_t prev_mdcop_count = cmdp[k].size();
+        for ( const Pattern& pattern : cmdp[k+1] ) {
+            prune_non_closed_subsets( cmdp, pattern, spatial_indexes_by_pattern );
+        }
+        if ( prev_mdcop_count > cmdp[k].size() ) { std::cout << std::setw( 5 ) << std::left << " " << "Non closed MDCOPs found!" << std::endl; }
         
         ++k;
     }
