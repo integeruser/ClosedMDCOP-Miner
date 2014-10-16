@@ -476,12 +476,14 @@ std::map<size_t, std::set<Pattern>> mine_closed_mdcops(const std::set<EventType>
             // not be time prevalent even if they are spatial prevalent in the remaining time slots)
             cmdp[k+1] = find_time_prev_co_occ( tp, time, time_slot_count, time_slot );
             
-            // for the next time slot, from all candidate patterns remove the candidates which were just pruned from the time prevalence table
-            for ( auto i = c[k+1][time_slot+1].cbegin(); i != c[k+1][time_slot+1].cend(); ) {
-                const Pattern& pattern = (*i).first;
+            // for the next time slots, from all candidate patterns remove the candidates which were just pruned from the time prevalence table
+            for ( int t = time_slot+1; t < first_time_slot+time_slot_count; ++t ) {
+                for ( auto i = c[k+1][t].cbegin(); i != c[k+1][t].cend(); ) {
+                    const Pattern& pattern = (*i).first;
                 
-                if ( !tp.count( pattern ) ) { c[k+1][time_slot+1].erase( i++ ); }
-                else { ++i; }
+                    if ( !tp.count( pattern ) ) { c[k+1][t].erase( i++ ); }
+                    else { ++i; }
+                }
             }
         }
         
