@@ -31,12 +31,12 @@ bool LatLonDistance::neighbors(const std::shared_ptr<Object>& object1, const std
     const float lon1 = object1->y, lon2 = object2->y;
     
     static const float R = 6371;  // km
-    const float φ1 = deg_to_rad( lat1 );
-    const float φ2 = deg_to_rad( lat2 );
-    const float Δφ = deg_to_rad( lat2-lat1 );
-    const float Δλ = deg_to_rad( lon2-lon1 );
+    const float phi1 = deg_to_rad( lat1 );
+    const float phi2 = deg_to_rad( lat2 );
+    const float dphi = deg_to_rad( lat2-lat1 );
+    const float dlambda = deg_to_rad( lon2-lon1 );
     
-    const float a = sinf( Δφ/2 ) * sinf( Δφ/2 ) + cosf( φ1 ) * cosf( φ2 ) * sinf( Δλ/2 ) * sinf( Δλ/2 );
+    const float a = sinf( dphi/2 ) * sinf( dphi/2 ) + cosf( phi1 ) * cosf( phi2 ) * sinf( dlambda/2 ) * sinf( dlambda/2 );
     const float c = 2 * atan2f( sqrtf( a ), sqrtf( 1-a ) );
     
     const float d = R * c;
